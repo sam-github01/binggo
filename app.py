@@ -152,7 +152,7 @@ with col_right:
     if st.session_state.drawing:
         # 1. 播放緊張感音樂
         autoplay_audio("drumroll.mp3")
-        autoplay_audio("win.mp3")
+        #autoplay_audio("win.mp3")
         
         # 2. 執行 3 秒的隨機跳動動畫
         start_time = time.time()
@@ -168,7 +168,7 @@ with col_right:
         # 狀態切換並重整
         st.session_state.drawing = False
         st.session_state.show_result = True
-        autoplay_audio("win.mp3")
+        #autoplay_audio("win.mp3")
         st.rerun() 
 
     elif st.session_state.show_result:
@@ -176,7 +176,20 @@ with col_right:
         st.balloons()
         autoplay_audio("win.mp3")
         display_placeholder.markdown(render_draw_box("🎊 恭喜幸運得主 🎊", st.session_state.final_number), unsafe_allow_html=True)
-        
+        # 產生隨機數字，強迫 Streamlit 判定這是一段「全新」的程式碼
+        unique_id = random.randint(1, 10000000)
+            
+        # 破解技巧：把隨機數字當作純文字塞在隱藏的區塊中。
+        # 這樣 HTML 字串保證每次都不一樣，瀏覽器就會乖乖地重新觸發 autoplay！
+        md = f"""
+            <div style="display:none;">
+                <audio autoplay="autoplay">
+                    <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+                </audio>
+                <span class="force-update">{unique_id}</span>
+            </div>
+            """
+        st.markdown(md, unsafe_allow_html=True)
     else:
         # 5. 初始待機畫面
         display_placeholder.markdown(render_draw_box("準備就緒，請點擊上方按鈕開始", "?"), unsafe_allow_html=True)
