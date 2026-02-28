@@ -10,29 +10,25 @@ st.set_page_config(page_title="幸運大抽獎", page_icon="🎉", layout="wide"
 
 # --- 自定義 CSS 與 音效函數 ---
 def autoplay_audio(file_path):
-    """利用 iframe 與 JavaScript 強制每次播放音效，徹底繞過 Streamlit 緩存"""
+    """手機版優化：捨棄 iframe，直接在主視窗產生全新的 audio 節點，繞過手機安全限制"""
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             data = f.read()
             b64 = base64.b64encode(data).decode()
             
-            # 使用當下時間戳記，確保每次產生的 HTML 都是完全獨立的全新字串
+            # 使用時間戳記作為獨一無二的 ID
             unique_id = str(time.time()).replace(".", "")
             
-            # 寫一段包含 audio 標籤與強制播放 JS 的 HTML
-            html_code = f"""
-                <audio id="audio_{unique_id}" autoplay>
-                    <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-                </audio>
-                <script>
-                    var audio = document.getElementById("audio_{unique_id}");
-                    audio.play().catch(function(error) {{
-                        console.log("播放失敗: ", error);
-                    }});
-                </script>
+            # 1. 捨棄 components.html，改用 st.markdown 直接注入主 DOM
+            # 2. 加入 playsinline="true"，這是破解 iPhone Safari 阻擋播放的關鍵
+            md = f"""
+                <div id="audio_box_{unique_id}" style="display:none;">
+                    <audio autoplay="autoplay" playsinline="true" preload="auto">
+                        <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+                    </audio>
+                </div>
             """
-            # 使用 components.html 渲染，並將寬高設為 0 讓它完全隱藏
-            components.html(html_code, width=0, height=0)
+            st.markdown(md, unsafe_allow_html=True)
 
 # 設計專屬視覺樣式
 st.markdown("""
