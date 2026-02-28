@@ -1,49 +1,24 @@
 import streamlit as st
 import time
 import random
-import base64
 import os
 
 # --- 頁面與版面設定 ---
 st.set_page_config(page_title="幸運大抽獎", page_icon="🎉", layout="wide")
 
-# --- 自定義 CSS 與 音效函數 ---
-def autoplay_audio(file_path, muted=False):
-    """
-    優化版音效播放：
-    加入靜音參數(muted)，用來在點擊瞬間騙過手機瀏覽器的自動播放限制，取得播放權限！
-    """
-    if os.path.exists(file_path):
-        with open(file_path, "rb") as f:
-            data = f.read()
-            b64 = base64.b64encode(data).decode()
-            
-            # 產生獨一無二的時間戳記
-            unique_id = int(time.time() * 1000)
-            
-            # 如果設定為 muted，就加入靜音屬性
-            mute_attr = "muted" if muted else ""
-            
-            # 直接渲染回純 HTML5 的 audio 標籤
-            md = f"""
-                <div id="audio_box_{unique_id}" style="display:none;">
-                    <audio autoplay="true" playsinline="true" preload="auto" {mute_attr}>
-                        <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-                    </audio>
-                </div>
-            """
-            st.markdown(md, unsafe_allow_html=True)
-
-# 設計專屬視覺樣式
+# 設計專屬視覺樣式，並隱藏 Streamlit 原生音樂播放器
 st.markdown("""
     <style>
+    /* 【關鍵黑科技 1】隱藏 Streamlit 的原生音樂播放器介面 */
+    [data-testid="stAudio"] {
+        display: none !important;
+    }
+    
     /* 調整主容器上方空白 */
     .block-container { padding-top: 2rem; }
     
     /* 左側歷史紀錄框樣式 */
-    .history-box {
-        background-color: #f0f2f6; padding: 15px; border-radius: 10px; margin-top: 20px; margin-bottom: 20px;
-    }
+    .history-box { background-color: #f0f2f6; padding: 15px; border-radius: 10px; margin-top: 20px; margin-bottom: 20px; }
     
     /* 抽獎框樣式 */
     .draw-box { 
@@ -57,7 +32,7 @@ st.markdown("""
     /* 放大右側開始抽獎按鈕 */
     div.stButton > button.kind-primary { font-size: 24px; font-weight: bold; height: 60px; }
     </style>
-    """, unsafe_allow_html=True)
+""", unsafe_allow_html=True)
 
 st.title("🎊 幸運大抽獎系統")
 st.divider()
@@ -125,16 +100,19 @@ with col_right:
                 st.session_state.show_result = False
                 st.rerun()
 
+    # 【關鍵黑科技 2】建立一個「固定位置」的佔位符給音樂播放器！
+    # 這樣系統在切換音樂時，只會替換裡面的音檔(src)，而不會把整個播放器刪掉重做。
+    # 這是讓手機瀏覽器保持授權記憶的終極關鍵！
+    audio_placeholder = st.empty()
+    
     display_placeholder = st.empty()
     
     if st.session_state.drawing:
-        # 1. 播放緊張感音樂
-        autoplay_audio("drumroll.mp3")
+        # 播放鼓聲
+        if os.path.exists("drumroll.mp3"):
+            with audio_placeholder:
+                st.audio("drumroll.mp3", autoplay=True)
         
-        # 2. 【關鍵黑科技】在按鈕按下的安全時間內，偷偷「靜音」播放一次歡呼聲，解鎖手機權限！
-        autoplay_audio("win.mp3", muted=True)
-        
-        # 3. 縮短跳動時間為 2.5 秒，確保不會超過瀏覽器的有效點擊時限
         start_time = time.time()
         while time.time() - start_time < 2.5:
             random_num = random.choice(available_numbers) 
@@ -149,9 +127,12 @@ with col_right:
         st.rerun() 
 
     elif st.session_state.show_result:
-        # 4. 顯示最終結果與慶祝音效 (此時手機已經授權，保證播得出來)
+        # 播放歡呼聲 (在同一個固定位置替換音檔，手機一定播得出來！)
+        if os.path.exists("win.mp3"):
+            with audio_placeholder:
+                st.audio("win.mp3", autoplay=True)
+                
         st.balloons()
-        autoplay_audio("win.mp3")
         display_placeholder.markdown(render_draw_box("🎊 恭喜幸運得主 🎊", st.session_state.final_number), unsafe_allow_html=True)
         
     else:
