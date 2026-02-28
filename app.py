@@ -35,21 +35,29 @@ st.markdown("""
         margin-top: 20px;
     }
     
-    /* 抽獎框樣式（直接寫在 HTML 裡面會用到這些 class） */
+    /* 抽獎框樣式 */
     .draw-box { 
         border: 5px solid #E74C3C; 
         border-radius: 20px; 
         padding: 50px; 
         background-color: #FDFEFE; 
-        min-height: 600px; 
+        min-height: 550px; 
         display: flex; 
         flex-direction: column; 
         justify-content: center;
         align-items: center;
         box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        margin-top: 10px;
     }
     .status-text { font-size: 40px !important; text-align: center; color: #2C3E50; font-weight: bold; margin-bottom: 20px;}
     .big-font { font-size: 180px !important; font-weight: bold; color: #E74C3C; text-align: center; margin: 0; line-height: 1.2; }
+    
+    /* 放大右側開始抽獎按鈕 */
+    div.stButton > button.kind-primary {
+        font-size: 24px;
+        font-weight: bold;
+        height: 60px;
+    }
     </style>
     """, unsafe_allow_html=True)
 
@@ -68,7 +76,6 @@ if 'drawn_numbers' not in st.session_state:
 
 # --- 輔助函數：用來產生右側完整的 HTML 畫面 ---
 def render_draw_box(status_text, number_text):
-    """將文字與數字包進 draw-box 的 HTML 中，確保畫面不跑位"""
     return f"""
     <div class="draw-box">
         <div class="status-text">{status_text}</div>
@@ -90,20 +97,11 @@ with col_left:
     
     st.write("<br>", unsafe_allow_html=True)
     
-    # 開始抽獎按鈕
-    if st.button("🚀 開始抽獎", use_container_width=True, type="primary"):
-        if min_val >= max_val:
-            st.error("最大值必須大於最小值！")
-        elif not available_numbers:
-            st.warning("此範圍內的號碼已全數抽出！請調整範圍或清除紀錄。")
-        else:
-            st.session_state.drawing = True
-            st.session_state.show_result = False
-    
-    # 再次抽獎按鈕
+    # 完成此次抽獎按鈕 (附帶清除紀錄功能)
     if st.session_state.show_result:
-        st.write("<br>", unsafe_allow_html=True)
-        if st.button("🔄 繼續下一抽", use_container_width=True):
+        if st.button("✅ 完成此次抽獎", use_container_width=True):
+            # 狀態全數重置，並清空已抽出號碼的紀錄
+            st.session_state.drawn_numbers = []
             st.session_state.show_result = False
             st.session_state.drawing = False
             st.session_state.final_number = None
@@ -118,7 +116,8 @@ with col_left:
         drawn_str = ", ".join(map(str, st.session_state.drawn_numbers))
         st.info(drawn_str)
         
-        if st.button("🗑️ 清除所有紀錄", use_container_width=True):
+        # 保留一個手動清除按鈕作為備用
+        if st.button("🗑️ 手動清除紀錄", use_container_width=True):
             st.session_state.drawn_numbers = []
             st.session_state.show_result = False
             st.session_state.drawing = False
@@ -131,7 +130,18 @@ with col_left:
 
 # === 右側：獨立大畫面的抽獎展示區 ===
 with col_right:
-    # 建立一個佔位符
+    # 將「開始抽獎」按鈕放置在右側上方，只有在非抽獎且非結果展示狀態時才顯示
+    if not st.session_state.drawing and not st.session_state.show_result:
+        if st.button("🚀 開始抽獎", use_container_width=True, type="primary"):
+            if min_val >= max_val:
+                st.error("最大值必須大於最小值！")
+            elif not available_numbers:
+                st.warning("此範圍內的號碼已全數抽出！請調整範圍或清除紀錄。")
+            else:
+                st.session_state.drawing = True
+                st.rerun() # 觸發重新渲染，進入抽獎動畫狀態
+
+    # 建立一個佔位符用來顯示抽獎框
     display_placeholder = st.empty()
     
     if st.session_state.drawing:
@@ -142,11 +152,10 @@ with col_right:
         start_time = time.time()
         while time.time() - start_time < 3:
             random_num = random.choice(available_numbers) 
-            # 將完整的 HTML 塞入佔位符中
             display_placeholder.markdown(render_draw_box("👉 抽獎進行中...", random_num), unsafe_allow_html=True)
             time.sleep(0.08)
         
-        # 3. 決定最終號碼
+        # 3. 決定最終號碼並存入紀錄
         st.session_state.final_number = random.choice(available_numbers)
         st.session_state.drawn_numbers.append(st.session_state.final_number)
         
@@ -159,9 +168,8 @@ with col_right:
         # 4. 顯示最終結果與慶祝音效
         st.balloons()
         autoplay_audio("win.mp3")
-        # 將最終結果包進完整的 HTML 框架中
         display_placeholder.markdown(render_draw_box("🎊 恭喜幸運得主 🎊", st.session_state.final_number), unsafe_allow_html=True)
         
     else:
         # 5. 初始待機畫面
-        display_placeholder.markdown(render_draw_box("準備就緒，請點擊左側開始", "?"), unsafe_allow_html=True)
+        display_placeholder.markdown(render_draw_box("準備就緒，請點擊上方按鈕開始", "?"), unsafe_allow_html=True)
