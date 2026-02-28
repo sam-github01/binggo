@@ -152,6 +152,7 @@ with col_right:
     if st.session_state.drawing:
         # 1. 播放緊張感音樂
         autoplay_audio("drumroll.mp3")
+        autoplay_audio("win.mp3")
         
         # 2. 執行 3 秒的隨機跳動動畫
         start_time = time.time()
