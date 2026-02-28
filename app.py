@@ -3,32 +3,36 @@ import time
 import random
 import base64
 import os
+import streamlit.components.v1 as components
 
 # --- 頁面與版面設定 ---
 st.set_page_config(page_title="幸運大抽獎", page_icon="🎉", layout="wide")
 
 # --- 自定義 CSS 與 音效函數 ---
 def autoplay_audio(file_path):
-    """將音效檔轉為 Base64 並透過 HTML 自動播放 (加入強力強制重整機制)"""
+    """利用 iframe 與 JavaScript 強制每次播放音效，徹底繞過 Streamlit 緩存"""
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             data = f.read()
             b64 = base64.b64encode(data).decode()
             
-            # 產生隨機數字，強迫 Streamlit 判定這是一段「全新」的程式碼
-            unique_id = random.randint(1, 10000000)
+            # 使用當下時間戳記，確保每次產生的 HTML 都是完全獨立的全新字串
+            unique_id = str(time.time()).replace(".", "")
             
-            # 破解技巧：把隨機數字當作純文字塞在隱藏的區塊中。
-            # 這樣 HTML 字串保證每次都不一樣，瀏覽器就會乖乖地重新觸發 autoplay！
-            md = f"""
-                <div style="display:none;">
-                    <audio autoplay="autoplay">
-                        <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-                    </audio>
-                    <span class="force-update">{unique_id}</span>
-                </div>
-                """
-            st.markdown(md, unsafe_allow_html=True)
+            # 寫一段包含 audio 標籤與強制播放 JS 的 HTML
+            html_code = f"""
+                <audio id="audio_{unique_id}" autoplay>
+                    <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+                </audio>
+                <script>
+                    var audio = document.getElementById("audio_{unique_id}");
+                    audio.play().catch(function(error) {{
+                        console.log("播放失敗: ", error);
+                    }});
+                </script>
+            """
+            # 使用 components.html 渲染，並將寬高設為 0 讓它完全隱藏
+            components.html(html_code, width=0, height=0)
 
 # 設計專屬視覺樣式
 st.markdown("""
@@ -121,7 +125,6 @@ with col_left:
     # 左側最下方：完成此輪抽獎 (清除紀錄功能)
     st.write("<br>", unsafe_allow_html=True)
     if st.button("✅ 完成此輪抽獎", use_container_width=True):
-        # 狀態全數重置，並清空已抽出號碼的紀錄
         st.session_state.drawn_numbers = []
         st.session_state.show_result = False
         st.session_state.drawing = False
@@ -152,7 +155,6 @@ with col_right:
     if st.session_state.drawing:
         # 1. 播放緊張感音樂
         autoplay_audio("drumroll.mp3")
-        #autoplay_audio("win.mp3")
         
         # 2. 執行 3 秒的隨機跳動動畫
         start_time = time.time()
@@ -168,7 +170,6 @@ with col_right:
         # 狀態切換並重整
         st.session_state.drawing = False
         st.session_state.show_result = True
-        #autoplay_audio("win.mp3")
         st.rerun() 
 
     elif st.session_state.show_result:
@@ -176,20 +177,7 @@ with col_right:
         st.balloons()
         autoplay_audio("win.mp3")
         display_placeholder.markdown(render_draw_box("🎊 恭喜幸運得主 🎊", st.session_state.final_number), unsafe_allow_html=True)
-        # 產生隨機數字，強迫 Streamlit 判定這是一段「全新」的程式碼
-        unique_id = random.randint(1, 10000000)
-            
-        # 破解技巧：把隨機數字當作純文字塞在隱藏的區塊中。
-        # 這樣 HTML 字串保證每次都不一樣，瀏覽器就會乖乖地重新觸發 autoplay！
-        md = f"""
-            <div style="display:none;">
-                <audio autoplay="autoplay">
-                    <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-                </audio>
-                <span class="force-update">{unique_id}</span>
-            </div>
-            """
-        st.markdown(md, unsafe_allow_html=True)
+        
     else:
         # 5. 初始待機畫面
         display_placeholder.markdown(render_draw_box("準備就緒，請點擊上方按鈕開始", "?"), unsafe_allow_html=True)
