@@ -167,6 +167,7 @@ with col_right:
         # 狀態切換並重整
         st.session_state.drawing = False
         st.session_state.show_result = True
+        autoplay_audio("win.mp3")
         st.rerun() 
 
     elif st.session_state.show_result:
