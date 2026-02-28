@@ -9,24 +9,17 @@ st.set_page_config(page_title="幸運大抽獎", page_icon="🎉", layout="wide"
 
 # --- 自定義 CSS 與 音效函數 ---
 def autoplay_audio(file_path):
-    """將音效檔轉為 Base64 並透過 HTML 自動播放 (加入強力強制重整機制)"""
+    """將音效檔轉為 Base64 並透過 HTML 自動播放（加入隨機 ID 強制每次播放）"""
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             data = f.read()
             b64 = base64.b64encode(data).decode()
-            
-            # 產生隨機數字，強迫 Streamlit 判定這是一段「全新」的程式碼
-            unique_id = random.randint(1, 10000000)
-            
-            # 破解技巧：把隨機數字當作純文字塞在隱藏的區塊中。
-            # 這樣 HTML 字串保證每次都不一樣，瀏覽器就會乖乖地重新觸發 autoplay！
+            # 產生一個隨機代碼，讓每次產生的 HTML 都長得不一樣
+            unique_id = random.randint(1, 1000000)
             md = f"""
-                <div style="display:none;">
-                    <audio autoplay="autoplay">
-                        <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
-                    </audio>
-                    <span class="force-update">{unique_id}</span>
-                </div>
+                <audio id="audio_{unique_id}" autoplay="true">
+                <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
+                </audio>
                 """
             st.markdown(md, unsafe_allow_html=True)
 
