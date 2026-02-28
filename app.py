@@ -9,13 +9,15 @@ st.set_page_config(page_title="幸運大抽獎", page_icon="🎉", layout="wide"
 
 # --- 自定義 CSS 與 音效函數 ---
 def autoplay_audio(file_path):
-    """將音效檔轉為 Base64 並透過 HTML 自動播放"""
+    """將音效檔轉為 Base64 並透過 HTML 自動播放（加入隨機 ID 強制每次播放）"""
     if os.path.exists(file_path):
         with open(file_path, "rb") as f:
             data = f.read()
             b64 = base64.b64encode(data).decode()
+            # 產生一個隨機代碼，讓每次產生的 HTML 都長得不一樣
+            unique_id = random.randint(1, 1000000)
             md = f"""
-                <audio autoplay="true">
+                <audio id="audio_{unique_id}" autoplay="true">
                 <source src="data:audio/mp3;base64,{b64}" type="audio/mp3">
                 </audio>
                 """
