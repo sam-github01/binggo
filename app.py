@@ -109,12 +109,12 @@ with col_right:
     
     if st.session_state.drawing:
         # 播放鼓聲
-        if os.path.exists("drumroll.mp3"):
+        if os.path.exists("win.mp3"):
             with audio_placeholder:
-                st.audio("drumroll.mp3", autoplay=True)
+                st.audio("win.mp3", autoplay=True)
         
         start_time = time.time()
-        while time.time() - start_time < 2.5:
+        while time.time() - start_time < 4:
             random_num = random.choice(available_numbers) 
             display_placeholder.markdown(render_draw_box("👉 抽獎進行中...", random_num), unsafe_allow_html=True)
             time.sleep(0.08)
@@ -128,9 +128,9 @@ with col_right:
 
     elif st.session_state.show_result:
         # 播放歡呼聲 (在同一個固定位置替換音檔，手機一定播得出來！)
-        if os.path.exists("win.mp3"):
-            with audio_placeholder:
-                st.audio("win.mp3", autoplay=True)
+        #if os.path.exists("win.mp3"):
+        #    with audio_placeholder:
+        #        st.audio("win.mp3", autoplay=True)
                 
         st.balloons()
         display_placeholder.markdown(render_draw_box("🎊 恭喜幸運得主 🎊", st.session_state.final_number), unsafe_allow_html=True)
